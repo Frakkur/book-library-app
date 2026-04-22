@@ -1,0 +1,43 @@
+# --- DEPENDENCIAS ---
+node_modules/
+.pnpm-store/
+jspm_packages/
+
+# --- BUILD / DIST ---
+dist/
+dist-ssr/
+*.tsbuildinfo
+
+# --- SEGURIDAD (CRÍTICO) ---
+# Contiene JWT_SECRET, DB_PASSWORD, etc. [cite: 5, 12, 14]
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# --- LOGS ---
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- TESTING ---
+coverage/
+*.lcov
+
+# --- EDITORES E IDEs ---
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# --- SISTEMA OPERATIVO ---
+.DS_Store
+Thumbs.db
