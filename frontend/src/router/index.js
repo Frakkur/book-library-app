@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
+import FavoritesView from '../views/FavoritesView.vue';
 
 const routes = [
   { path: '/', redirect: '/home' },
-
   {
     path: '/login',
     name: 'login',
@@ -25,7 +25,12 @@ const routes = [
     name: 'catalog',
     component: () => import('../views/CatalogView.vue'),
     meta: { requiereAuth: true },
-  },
+  }, {
+  path: '/favorites',
+  name: 'favorites',
+  component: () => import('../views/FavoritesView.vue'),
+  meta: { requiereAuth: true },
+},
   {
     path: '/admin',
     name: 'admin',
@@ -39,28 +44,28 @@ const router = createRouter({
   routes,
 });
 
-// ─── NAVIGATION GUARD ────────────────────────────────────────────────────────
-router.beforeEach((to, from, next) => {
-  const authStore      = useAuthStore();
-  const autenticado    = authStore.estaAutenticado;
-  const esAdmin        = authStore.esAdmin;
+// ─── NAVIGATION GUARD (Sintaxis Moderna) ──────────────────────────────────────
+router.beforeEach((to) => {
+  const authStore = useAuthStore();
+  const autenticado = authStore.estaAutenticado;
+  const esAdmin = authStore.esAdmin;
 
   // Ruta protegida sin sesión → login
   if (to.meta.requiereAuth && !autenticado) {
-    return next({ name: 'login' });
+    return { name: 'login' };
   }
 
-  // Ruta exclusiva de admin → 403 silencioso: redirige a home
+  // Ruta exclusiva de admin → redirige a home
   if (to.meta.soloAdmin && !esAdmin) {
-    return next({ name: 'home' });
+    return { name: 'home' };
   }
 
   // Usuario ya logueado intenta ir a login/register → home
   if (autenticado && (to.name === 'login' || to.name === 'register')) {
-    return next({ name: 'home' });
+    return { name: 'home' };
   }
 
-  next();
+  // Si no entra en ninguna condición, permite la navegación automáticamente
 });
 
 export default router;

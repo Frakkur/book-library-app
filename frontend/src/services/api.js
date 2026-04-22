@@ -1,15 +1,16 @@
 import axios from 'axios';
 
-// Instancia central de Axios apuntando al backend
+// 1. FORZAMOS 127.0.0.1 en lugar de localhost para evitar el CONNECTION_REFUSED
 const api = axios.create({
-  baseURL: 'http://localhost:5001/api',
+  baseURL: 'http://127.0.0.1:5001/api', 
   headers: {
     'Content-Type': 'application/json',
   },
+  // 2. IMPORTANTE: Permitir el intercambio de cookies/sesión
+  withCredentials: true 
 });
 
 // ─── INTERCEPTOR DE REQUEST ──────────────────────────────────────────────────
-// Antes de cada petición, adjunta el JWT si existe en localStorage
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -22,15 +23,21 @@ api.interceptors.request.use(
 );
 
 // ─── INTERCEPTOR DE RESPONSE ─────────────────────────────────────────────────
-// Si el servidor devuelve 401 (token expirado o inválido), limpia la sesión
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Si la conexión falla totalmente (error.request existe pero no hay response)
+    if (!error.response) {
+      console.error("❌ No hay respuesta del servidor. ¿Está encendido el backend?");
+    }
+
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('usuario');
-      // Redirige al login sin importar en qué ruta esté el usuario
-      window.location.href = '/login';
+      // Solo redirigir si no estamos ya en el login para evitar bucles
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

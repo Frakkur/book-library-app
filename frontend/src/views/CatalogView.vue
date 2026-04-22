@@ -1,19 +1,21 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '../stores/authStore';
-import { useRouter }    from 'vue-router';
+import { useRouter } from 'vue-router';
 import api from '../services/api';
 
-const authStore = useAuthStore();
-const router    = useRouter();
+// 1. IMPORTACIÓN DEL COMPONENTE DE FAVORITOS
+import FavoriteButton from '../components/FavoriteButton.vue'; 
 
-const libros  = ref([]);
+const authStore = useAuthStore();
+const router = useRouter();
+
+const libros = ref([]);
 const cargando = ref(false);
 const errorMsg = ref('');
 
-// Filtros
 const filtrTitulo = ref('');
-const filtrAutor  = ref('');
+const filtrAutor = ref('');
 
 async function cargarLibros() {
   cargando.value = true;
@@ -21,7 +23,7 @@ async function cargarLibros() {
   try {
     const params = {};
     if (filtrTitulo.value.trim()) params.titulo = filtrTitulo.value.trim();
-    if (filtrAutor.value.trim())  params.autor  = filtrAutor.value.trim();
+    if (filtrAutor.value.trim()) params.autor = filtrAutor.value.trim();
 
     const { data } = await api.get('/libros', { params });
     libros.value = data;
@@ -34,7 +36,7 @@ async function cargarLibros() {
 
 function limpiarFiltros() {
   filtrTitulo.value = '';
-  filtrAutor.value  = '';
+  filtrAutor.value = '';
   cargarLibros();
 }
 
@@ -48,8 +50,6 @@ onMounted(cargarLibros);
 
 <template>
   <div class="pagina">
-
-    <!-- Cabecera -->
     <header class="cabecera">
       <h1>📚 Catálogo de libros</h1>
       <div class="acciones-cabecera">
@@ -57,44 +57,24 @@ onMounted(cargarLibros);
         <router-link v-if="authStore.esAdmin" to="/admin" class="btn-admin">
           Panel admin
         </router-link>
+        <router-link to="/favorites" class="btn-favoritos-link">❤️ Mis Favoritos</router-link>
         <button @click="cerrarSesion" class="btn-salir">Cerrar sesión</button>
       </div>
     </header>
 
-    <!-- Filtros -->
     <section class="filtros">
-      <input
-        v-model="filtrTitulo"
-        @keyup.enter="cargarLibros"
-        placeholder="Buscar por título…"
-      />
-      <input
-        v-model="filtrAutor"
-        @keyup.enter="cargarLibros"
-        placeholder="Buscar por autor…"
-      />
+      <input v-model="filtrTitulo" @keyup.enter="cargarLibros" placeholder="Buscar por título…" />
+      <input v-model="filtrAutor" @keyup.enter="cargarLibros" placeholder="Buscar por autor…" />
       <button @click="cargarLibros" class="btn-buscar">Buscar</button>
       <button @click="limpiarFiltros" class="btn-limpiar">Limpiar</button>
     </section>
 
-    <!-- Estado: cargando -->
     <p v-if="cargando" class="estado">Cargando catálogo…</p>
-
-    <!-- Estado: error -->
     <p v-else-if="errorMsg" class="error">{{ errorMsg }}</p>
+    <p v-else-if="libros.length === 0" class="estado">No se encontraron libros.</p>
 
-    <!-- Estado: sin resultados -->
-    <p v-else-if="libros.length === 0" class="estado">
-      No se encontraron libros con esos criterios.
-    </p>
-
-    <!-- Grilla de libros -->
     <div v-else class="grilla">
-      <article
-        v-for="libro in libros"
-        :key="libro.id"
-        class="tarjeta"
-      >
+      <article v-for="libro in libros" :key="libro.id" class="tarjeta">
         <div class="portada">
           <img
             v-if="libro.imagen_url"
@@ -107,73 +87,40 @@ onMounted(cargarLibros);
 
         <div class="info">
           <h3 class="titulo">{{ libro.titulo }}</h3>
-          <p  class="autor">{{ libro.autor }}</p>
-          <p  v-if="libro.genero" class="genero">{{ libro.genero }}</p>
-          <p  v-if="libro.anio_publicacion" class="anio">{{ libro.anio_publicacion }}</p>
-          <p  class="paginas">{{ libro.total_paginas }} páginas</p>
-          <p  v-if="libro.descripcion" class="descripcion">{{ libro.descripcion }}</p>
+          <p class="autor">{{ libro.autor }}</p>
+          <p v-if="libro.genero" class="genero">{{ libro.genero }}</p>
+          <p v-if="libro.anio_publicacion" class="anio">{{ libro.anio_publicacion }}</p>
+          <p class="paginas">{{ libro.total_paginas }} páginas</p>
+          <p v-if="libro.descripcion" class="descripcion">{{ libro.descripcion }}</p>
+
+          <div class="acciones-tarjeta">
+            <FavoriteButton :bookId="String(libro.id)" />
+          </div>
         </div>
       </article>
     </div>
-
   </div>
 </template>
 
 <style scoped>
-.pagina {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 24px 20px;
-  font-family: system-ui, sans-serif;
-}
-
-/* Cabecera */
-.cabecera {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 28px;
-  flex-wrap: wrap;
-  gap: 12px;
-}
+.pagina { max-width: 1100px; margin: 0 auto; padding: 24px 20px; font-family: system-ui, sans-serif; }
+.cabecera { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
 .cabecera h1 { margin: 0; font-size: 1.6rem; color: #1e1b4b; }
 .acciones-cabecera { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .bienvenida { font-size: 14px; color: #6b7280; }
 
-/* Botones de cabecera */
-.btn-admin  { padding: 7px 14px; background: #4f46e5; color: #fff; border-radius: 6px; text-decoration: none; font-size: 13px; }
-.btn-salir  { padding: 7px 14px; background: #ef4444; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.btn-admin { padding: 7px 14px; background: #4f46e5; color: #fff; border-radius: 6px; text-decoration: none; font-size: 13px; }
+.btn-favoritos-link { padding: 7px 14px; background: #fff; color: #ef4444; border: 1px solid #ef4444; border-radius: 6px; text-decoration: none; font-size: 13px; transition: all 0.2s; }
+.btn-favoritos-link:hover { background: #ef4444; color: #fff; }
+.btn-salir { padding: 7px 14px; background: #ef4444; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
 
-/* Filtros */
-.filtros {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 28px;
-}
-.filtros input {
-  flex: 1;
-  min-width: 180px;
-  padding: 9px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
-}
+.filtros { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 28px; }
+.filtros input { flex: 1; min-width: 180px; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
 .btn-buscar { padding: 9px 18px; background: #4f46e5; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
 .btn-limpiar { padding: 9px 18px; background: #9ca3af; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
 
-/* Estados */
-.estado { text-align: center; color: #6b7280; padding: 40px 0; }
-.error  { text-align: center; color: #dc2626; background: #fee2e2; padding: 12px; border-radius: 6px; }
+.grilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
 
-/* Grilla */
-.grilla {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
-}
-
-/* Tarjeta */
 .tarjeta {
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -185,25 +132,18 @@ onMounted(cargarLibros);
   transition: box-shadow .2s;
 }
 .tarjeta:hover { box-shadow: 0 4px 12px rgba(0,0,0,.12); }
-
-/* Portada */
 .portada { height: 180px; overflow: hidden; background: #f3f4f6; display: flex; align-items: center; justify-content: center; }
 .portada img { width: 100%; height: 100%; object-fit: cover; }
-.portada-placeholder { font-size: 56px; }
 
-/* Info */
 .info { padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .titulo { margin: 0; font-size: 15px; font-weight: 600; color: #111827; line-height: 1.3; }
-.autor  { margin: 0; font-size: 13px; color: #4b5563; }
-.genero, .anio { margin: 0; font-size: 12px; color: #9ca3af; }
-.paginas { margin: 0; font-size: 12px; color: #6b7280; }
-.descripcion {
-  margin: 6px 0 0;
-  font-size: 12px;
-  color: #6b7280;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.autor { margin: 0; font-size: 13px; color: #4b5563; }
+
+/* ESTILO PARA EL CONTENEDOR DEL BOTÓN DE FAVORITOS */
+.acciones-tarjeta {
+  margin-top: auto; 
+  padding-top: 12px;
+  display: flex;
+  justify-content: flex-end; 
 }
 </style>
