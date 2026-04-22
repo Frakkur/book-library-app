@@ -1,31 +1,29 @@
 const { z } = require('zod');
 
-/**
- * Schema de validación para registro de usuario
- * Verifica que:
- * - nombre sea string no vacío
- * - email sea un email válido
- * - contraseña tenga mínimo 6 caracteres
- */
 const schemaRegistro = z.object({
-  nombre: z.string().min(1, 'El nombre es requerido'),
-  email: z.string().email('Email inválido'),
+  nombre:     z.string().min(1, 'El nombre es requerido'),
+  email:      z.string().email('Email inválido'),
   contrasena: z.string().min(6, 'La contraseña debe tener mínimo 6 caracteres'),
 });
 
-/**
- * Schema de validación para login
- */
 const schemaLogin = z.object({
-  email: z.string().email('Email inválido'),
+  email:      z.string().email('Email inválido'),
   contrasena: z.string().min(1, 'La contraseña es requerida'),
 });
 
+const schemaLibro = z.object({
+  titulo:           z.string().min(1, 'El título es requerido'),
+  autor:            z.string().min(1, 'El autor es requerido'),
+  total_paginas:    z.number().int().positive('El total de páginas debe ser mayor a 0'),
+  descripcion:      z.string().optional(),
+  genero:           z.string().optional(),
+  anio_publicacion: z.number().int().min(1000).max(2100).optional(),
+  imagen_url:       z.string().url('URL inválida').optional().or(z.literal('')),
+});
+
 /**
- * Función auxiliar para validar datos
- * @param {Object} schema - Schema de Zod
- * @param {Object} data - Datos a validar
- * @returns {Object} { valido: boolean, datos: Object|null, errores: Object|null }
+ * Valida `data` contra `schema` y devuelve un objeto uniforme.
+ * @returns {{ valido: boolean, datos: object|null, errores: object|null }}
  */
 const validar = (schema, data) => {
   try {
@@ -43,8 +41,4 @@ const validar = (schema, data) => {
   }
 };
 
-module.exports = {
-  schemaRegistro,
-  schemaLogin,
-  validar,
-};
+module.exports = { schemaRegistro, schemaLogin, schemaLibro, validar };

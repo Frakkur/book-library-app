@@ -1,17 +1,36 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
-import LoginView from '../views/LoginView.vue';
-import HomeView from '../views/HomeView.vue';
-import RegisterView from '../views/RegisterView.vue';
 
 const routes = [
-  { path: '/', redirect: '/login' },
-  { path: '/login',    component: LoginView },
-  { path: '/register', component: RegisterView },
+  { path: '/', redirect: '/home' },
+
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('../views/LoginView.vue'),
+  },
+  {
+    path: '/register',
+    name: 'register',
+    component: () => import('../views/RegisterView.vue'),
+  },
   {
     path: '/home',
-    component: HomeView,
+    name: 'home',
+    component: () => import('../views/HomeView.vue'),
     meta: { requiereAuth: true },
+  },
+  {
+    path: '/catalog',
+    name: 'catalog',
+    component: () => import('../views/CatalogView.vue'),
+    meta: { requiereAuth: true },
+  },
+  {
+    path: '/admin',
+    name: 'admin',
+    component: () => import('../views/AdminView.vue'),
+    meta: { requiereAuth: true, soloAdmin: true },
   },
 ];
 
@@ -21,21 +40,27 @@ const router = createRouter({
 });
 
 // ─── NAVIGATION GUARD ────────────────────────────────────────────────────────
-// El store se llama dentro del guard (no en el top-level) para evitar el
-// problema de "store usado antes de que Pinia esté montado"
-router.beforeEach((to) => {
-  const authStore = useAuthStore();
-  const requiereAuth = to.meta.requiereAuth;
+router.beforeEach((to, from, next) => {
+  const authStore      = useAuthStore();
+  const autenticado    = authStore.estaAutenticado;
+  const esAdmin        = authStore.esAdmin;
 
-  // Si la ruta necesita auth y el usuario no está autenticado → redirige al login
-  if (requiereAuth && !authStore.estaAutenticado) {
-    return '/login';
+  // Ruta protegida sin sesión → login
+  if (to.meta.requiereAuth && !autenticado) {
+    return next({ name: 'login' });
   }
 
-  // Si ya está autenticado e intenta ir a login/register → redirige a /home
-  if (authStore.estaAutenticado && (to.path === '/login' || to.path === '/register')) {
-    return '/home';
+  // Ruta exclusiva de admin → 403 silencioso: redirige a home
+  if (to.meta.soloAdmin && !esAdmin) {
+    return next({ name: 'home' });
   }
+
+  // Usuario ya logueado intenta ir a login/register → home
+  if (autenticado && (to.name === 'login' || to.name === 'register')) {
+    return next({ name: 'home' });
+  }
+
+  next();
 });
 
 export default router;
